@@ -1,174 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smart TV Checklist - Grand Sehati</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Housekeeping TV Checklist</title>
 
-<style>
-body {
-    font-family: Arial;
-    margin: 0;
-    background: #f5f7fa;
-}
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f6f8;
+    }
 
-header {
-    background: #2d6cdf;
-    color: white;
-    padding: 15px;
-    text-align: center;
-    font-weight: bold;
-}
+    header {
+      background: #2c7be5;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+    }
 
-.container { padding: 15px; }
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      padding: 10px;
+    }
 
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 10px;
-}
+    .room {
+      background: white;
+      border-radius: 10px;
+      padding: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
 
-.room {
-    background: white;
-    padding: 10px;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
+    .room h3 {
+      margin: 0 0 10px;
+      font-size: 14px;
+    }
 
-.room-name {
-    font-weight: bold;
-    margin-bottom: 8px;
-}
+    label {
+      display: block;
+      margin: 5px 0;
+      font-size: 14px;
+      cursor: pointer;
+    }
 
-.option {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 5px;
-    cursor: pointer;
-}
+    input[type="checkbox"] {
+      transform: scale(1.4);
+      margin-right: 8px;
+    }
 
-input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-}
+    .box-selected {
+      background: #d4edda;
+    }
 
-.buttons {
-    margin-top: 15px;
-    display: flex;
-    gap: 10px;
-}
-
-button {
-    flex: 1;
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    color: white;
-}
-
-.submit { background: #28a745; }
-
-.result {
-    margin-top: 15px;
-    background: white;
-    padding: 10px;
-    border-radius: 10px;
-}
-</style>
+    .normal-selected {
+      background: #f8d7da;
+    }
+  </style>
 </head>
-
 <body>
 
-<header>Housekeeping TV Type Checklist - Grand Sehati</header>
+<header>
+  Housekeeping TV Type Checklist - Grand Sehati
+</header>
 
-<div class="container">
-<div class="grid" id="roomList"></div>
+<div class="container" id="roomContainer"></div>
 
-<div class="buttons">
-<button class="submit" onclick="submitData()">Submit</button>
-</div>
-
-<div class="result" id="result"></div>
-</div>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
-const rooms = [
+  // 🔥 GANTI DENGAN CONFIG FIREBASE LO
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+    projectId: "YOUR_PROJECT",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "XXXX",
+    appId: "XXXX"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const rooms = [
     ...Array.from({length: 18}, (_, i) => `Room ${i+1}`),
     "Wayan", "Made", "Nyoman", "Ketut"
-];
+  ];
 
-const saved = JSON.parse(localStorage.getItem("tvType")) || {};
+  const container = document.getElementById("roomContainer");
 
-const container = document.getElementById("roomList");
-
-rooms.forEach(room => {
+  function createRoomUI(roomName) {
     const div = document.createElement("div");
     div.className = "room";
-
-    const tvBoxChecked = saved[room] === "box" ? "checked" : "";
-    const tvNormalChecked = saved[room] === "normal" ? "checked" : "";
+    div.id = `room-${roomName}`;
 
     div.innerHTML = `
-        <div class="room-name">${room}</div>
-
-        <label class="option">
-            <input type="checkbox" data-room="${room}" data-type="box" ${tvBoxChecked}>
-            ✔ TV Box
-        </label>
-
-        <label class="option">
-            <input type="checkbox" data-room="${room}" data-type="normal" ${tvNormalChecked}>
-            ✖ TV Biasa
-        </label>
+      <h3>${roomName}</h3>
+      <label>
+        <input type="checkbox" name="${roomName}" value="box">
+        TV Box
+      </label>
+      <label>
+        <input type="checkbox" name="${roomName}" value="normal">
+        TV Biasa
+      </label>
     `;
 
-    container.appendChild(div);
-});
+    const checkboxes = div.querySelectorAll("input");
 
-// exclusive logic
-document.addEventListener("change", function(e) {
-    if (e.target.type === "checkbox") {
-        const room = e.target.dataset.room;
-        const type = e.target.dataset.type;
+    checkboxes.forEach(cb => {
+      cb.addEventListener("change", () => {
+        if (cb.checked) {
+          // uncheck lainnya
+          checkboxes.forEach(other => {
+            if (other !== cb) other.checked = false;
+          });
 
-        document.querySelectorAll(`input[data-room="${room}"]`).forEach(cb => {
-            if (cb !== e.target) cb.checked = false;
-        });
-
-        saveData();
-    }
-});
-
-function saveData() {
-    const data = {};
-
-    rooms.forEach(room => {
-        const selected = document.querySelector(`input[data-room="${room}"]:checked`);
-        if (selected) data[room] = selected.dataset.type;
-    });
-
-    localStorage.setItem("tvType", JSON.stringify(data));
-}
-
-function submitData() {
-    saveData();
-
-    const data = JSON.parse(localStorage.getItem("tvType")) || {};
-    let result = "<b>Checklist Result:</b><br><br>";
-
-    rooms.forEach(room => {
-        if (data[room] === "box") {
-            result += `${room}: ✔ Smart TV <br>`;
-        } else if (data[room] === "normal") {
-            result += `${room}: ✖ TV Biasa<br>`;
+          saveData(roomName, cb.value);
         } else {
-            result += `${room}: -<br>`;
+          // kalau di-uncheck semua → hapus data
+          saveData(roomName, null);
         }
+      });
     });
 
-    document.getElementById("result").innerHTML = result;
-}
+    container.appendChild(div);
+  }
+
+  function saveData(room, value) {
+    const ref = db.ref("tv_rooms/" + room);
+
+    if (value) {
+      ref.set(value);
+    } else {
+      ref.remove();
+    }
+  }
+
+  function applyUI(room, value) {
+    const div = document.getElementById(`room-${room}`);
+    if (!div) return;
+
+    const checkboxes = div.querySelectorAll("input");
+
+    checkboxes.forEach(cb => {
+      cb.checked = (cb.value === value);
+    });
+
+    div.classList.remove("box-selected", "normal-selected");
+
+    if (value === "box") {
+      div.classList.add("box-selected");
+    } else if (value === "normal") {
+      div.classList.add("normal-selected");
+    }
+  }
+
+  function init() {
+    rooms.forEach(createRoomUI);
+
+    // 🔥 REALTIME LISTENER
+    db.ref("tv_rooms").on("value", snapshot => {
+      const data = snapshot.val() || {};
+
+      rooms.forEach(room => {
+        applyUI(room, data[room]);
+      });
+    });
+  }
+
+  init();
 </script>
 
 </body>
