@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart TV Checklist - Grand Sehati</title>
+
+<style>
+body {
+    font-family: Arial;
+    margin: 0;
+    background: #f5f7fa;
+}
+
+header {
+    background: #2d6cdf;
+    color: white;
+    padding: 15px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.container { padding: 15px; }
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+}
+
+.room {
+    background: white;
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.room-name {
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+}
+
+.buttons {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    color: white;
+}
+
+.submit { background: #28a745; }
+
+.result {
+    margin-top: 15px;
+    background: white;
+    padding: 10px;
+    border-radius: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<header>Housekeeping TV Type Checklist - Grand Sehati</header>
+
+<div class="container">
+<div class="grid" id="roomList"></div>
+
+<div class="buttons">
+<button class="submit" onclick="submitData()">Submit</button>
+</div>
+
+<div class="result" id="result"></div>
+</div>
+
+<script>
+const rooms = [
+    ...Array.from({length: 18}, (_, i) => `Room ${i+1}`),
+    "Wayan", "Made", "Nyoman", "Ketut"
+];
+
+const saved = JSON.parse(localStorage.getItem("tvType")) || {};
+
+const container = document.getElementById("roomList");
+
+rooms.forEach(room => {
+    const div = document.createElement("div");
+    div.className = "room";
+
+    const tvBoxChecked = saved[room] === "box" ? "checked" : "";
+    const tvNormalChecked = saved[room] === "normal" ? "checked" : "";
+
+    div.innerHTML = `
+        <div class="room-name">${room}</div>
+
+        <label class="option">
+            <input type="checkbox" data-room="${room}" data-type="box" ${tvBoxChecked}>
+            ✔ TV Box
+        </label>
+
+        <label class="option">
+            <input type="checkbox" data-room="${room}" data-type="normal" ${tvNormalChecked}>
+            ✖ TV Biasa
+        </label>
+    `;
+
+    container.appendChild(div);
+});
+
+// exclusive logic
+document.addEventListener("change", function(e) {
+    if (e.target.type === "checkbox") {
+        const room = e.target.dataset.room;
+        const type = e.target.dataset.type;
+
+        document.querySelectorAll(`input[data-room="${room}"]`).forEach(cb => {
+            if (cb !== e.target) cb.checked = false;
+        });
+
+        saveData();
+    }
+});
+
+function saveData() {
+    const data = {};
+
+    rooms.forEach(room => {
+        const selected = document.querySelector(`input[data-room="${room}"]:checked`);
+        if (selected) data[room] = selected.dataset.type;
+    });
+
+    localStorage.setItem("tvType", JSON.stringify(data));
+}
+
+function submitData() {
+    saveData();
+
+    const data = JSON.parse(localStorage.getItem("tvType")) || {};
+    let result = "<b>Checklist Result:</b><br><br>";
+
+    rooms.forEach(room => {
+        if (data[room] === "box") {
+            result += `${room}: ✔ Smart TV <br>`;
+        } else if (data[room] === "normal") {
+            result += `${room}: ✖ TV Biasa<br>`;
+        } else {
+            result += `${room}: -<br>`;
+        }
+    });
+
+    document.getElementById("result").innerHTML = result;
+}
+</script>
+
+</body>
+</html>
